@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>NEXA-MD</title>
+  <style>
+    body {
+      background: black;
+      color: white;
+      text-align: center;
+      font-family: Arial;
+    }
+
+    h1 {
+      margin-top: 120px;
+      font-size: 42px;
+    }
+
+    button {
+      padding: 12px 20px;
+      margin: 10px;
+      border-radius: 20px;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    img {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>NEXA-MD</h1>
+<p>How do you want to pair?</p>
+
+<button onclick="getQR()">QR</button>
+<button onclick="getPair()">Enter Code</button>
+
+<br>
+<img id="qr" width="250"/>
+
+<script>
+const API = "https://your-render-url";
+
+async function getQR() {
+  const res = await fetch(API + "/session");
+  const data = await res.json();
+
+  document.getElementById("qr").src = data.qr;
+}
+
+async function getPair() {
+  const number = prompt("Enter WhatsApp number with country code");
+
+  const res = await fetch(API + "/pair?number=" + number);
+  const data = await res.json();
+
+  alert("Pair Code: " + data.code);
+}
+</script>
+
+</body>
+</html>
