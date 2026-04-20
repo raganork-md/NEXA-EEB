@@ -1,63 +1,58 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>NEXA-MD</title>
+  <title>NEXA Pairing</title>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <style>
     body {
       background: black;
       color: white;
       text-align: center;
-      font-family: Arial;
+      font-family: sans-serif;
     }
-
-    h1 {
-      margin-top: 120px;
-      font-size: 42px;
-    }
-
-    button {
-      padding: 12px 20px;
+    input, button {
+      padding: 10px;
       margin: 10px;
-      border-radius: 20px;
-      border: none;
       font-size: 16px;
-      cursor: pointer;
     }
-
-    img {
+    .box {
+      font-size: 25px;
+      letter-spacing: 5px;
       margin-top: 20px;
     }
   </style>
 </head>
 <body>
 
-<h1>NEXA-MD</h1>
-<p>How do you want to pair?</p>
+<h1>NEXA Pairing</h1>
 
-<button onclick="getQR()">QR</button>
-<button onclick="getPair()">Enter Code</button>
-
+<input id="phone" placeholder="Enter number"/>
 <br>
-<img id="qr" width="250"/>
+<button onclick="start()">Get Code</button>
+
+<div class="box" id="code"></div>
+<div id="msg"></div>
+<div class="box" id="session"></div>
 
 <script>
-const API = "https://your-render-url";
+const socket = io();
 
-async function getQR() {
-  const res = await fetch(API + "/session");
-  const data = await res.json();
-
-  document.getElementById("qr").src = data.qr;
+function start() {
+  const phone = document.getElementById("phone").value;
+  socket.emit("pair", phone);
 }
 
-async function getPair() {
-  const number = prompt("Enter WhatsApp number with country code");
+socket.on("pair", (code) => {
+  document.getElementById("code").innerText = code;
+});
 
-  const res = await fetch(API + "/pair?number=" + number);
-  const data = await res.json();
+socket.on("msg", (msg) => {
+  document.getElementById("msg").innerText = msg;
+});
 
-  alert("Pair Code: " + data.code);
-}
+socket.on("session", (session) => {
+  document.getElementById("session").innerText = session;
+});
 </script>
 
 </body>
