@@ -1,5 +1,5 @@
 {
-  "name": "nexa-site",
+  "name": "nexa-md-session",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -7,6 +7,9 @@
   },
   "dependencies": {
     "express": "^4.19.2",
-    "socket.io": "^4.7.5"
+    "socket.io": "^4.7.5",
+    "@whiskeysockets/baileys": "latest",
+    "pino": "^9.0.0",
+    "qrcode": "^1.5.3"
   }
 }
