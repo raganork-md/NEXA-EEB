@@ -1,58 +1,116 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>NEXA Pairing</title>
+  <title>NEXA-MD | Session Generator</title>
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <style>
     body {
-      background: black;
+      background: radial-gradient(circle, #3a0000 0%, #000 80%);
       color: white;
       text-align: center;
       font-family: sans-serif;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
     }
-    input, button {
-      padding: 10px;
-      margin: 10px;
-      font-size: 16px;
+    .container {
+      width: 90%;
+      max-width: 400px;
+      padding: 20px;
     }
-    .box {
-      font-size: 25px;
-      letter-spacing: 5px;
-      margin-top: 20px;
+    h1 { font-size: 35px; letter-spacing: 2px; margin-bottom: 5px; }
+    p { color: #ccc; margin-bottom: 30px; }
+    .btn-group { display: flex; gap: 15px; justify-content: center; margin-bottom: 25px; }
+    button {
+      padding: 12px 25px;
+      border-radius: 25px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
     }
+    .qr-btn { background: #fff; color: #000; }
+    .code-btn { background: #333; color: #fff; border: 1px solid #555; }
+    input {
+      padding: 12px;
+      width: 80%;
+      border-radius: 10px;
+      border: 1px solid #555;
+      background: #111;
+      color: #fff;
+      display: none;
+      margin: 0 auto 15px;
+    }
+    #qr-image { width: 200px; border: 2px solid #fff; display: none; margin: 20px auto; }
+    #status { margin-top: 15px; font-size: 14px; color: #0f0; }
+    #code-display { font-size: 24px; color: #0f0; letter-spacing: 5px; margin-top: 10px; }
   </style>
 </head>
 <body>
 
-<h1>NEXA Pairing</h1>
+<div class="container">
+  <h1>NEXA-MD</h1>
+  <p>How do you want to pair?</p>
 
-<input id="phone" placeholder="Enter number"/>
-<br>
-<button onclick="start()">Get Code</button>
+  <div class="btn-group">
+    <button class="qr-btn" onclick="getQR()">QR CODE</button>
+    <button class="code-btn" onclick="showInput()">PAIRING CODE</button>
+  </div>
 
-<div class="box" id="code"></div>
-<div id="msg"></div>
-<div class="box" id="session"></div>
+  <input id="phone" type="text" placeholder="e.g. 919012345678" onchange="getCode()"/>
+  <img id="qr-image" src="" alt="QR" />
+  <div id="code-display"></div>
+  <div id="status"></div>
+</div>
 
 <script>
-const socket = io();
+  const socket = io();
+  const phoneInput = document.getElementById("phone");
+  const qrImg = document.getElementById("qr-image");
+  const status = document.getElementById("status");
+  const codeDiv = document.getElementById("code-display");
 
-function start() {
-  const phone = document.getElementById("phone").value;
-  socket.emit("pair", phone);
-}
+  function showInput() {
+    phoneInput.style.display = "block";
+    qrImg.style.display = "none";
+    status.innerText = "Enter number with country code";
+    codeDiv.innerText = "";
+  }
 
-socket.on("pair", (code) => {
-  document.getElementById("code").innerText = code;
-});
+  function getQR() {
+    phoneInput.style.display = "none";
+    status.innerText = "Generating QR...";
+    codeDiv.innerText = "";
+    socket.emit("pair-qr");
+  }
 
-socket.on("msg", (msg) => {
-  document.getElementById("msg").innerText = msg;
-});
+  function getCode() {
+    const num = phoneInput.value;
+    if(num) {
+        status.innerText = "Requesting Code...";
+        socket.emit("pair-code", num);
+    }
+  }
 
-socket.on("session", (session) => {
-  document.getElementById("session").innerText = session;
-});
+  socket.on("qr", (src) => {
+    qrImg.src = src;
+    qrImg.style.display = "block";
+    status.innerText = "Scan this QR code";
+  });
+
+  socket.on("code", (code) => {
+    codeDiv.innerText = code;
+    status.innerText = "Enter this code in WhatsApp";
+  });
+
+  socket.on("session", (msg) => {
+    status.innerText = msg;
+    codeDiv.innerText = "SUCCESS";
+    qrImg.style.display = "none";
+    phoneInput.style.display = "none";
+  });
 </script>
 
 </body>
