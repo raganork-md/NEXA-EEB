@@ -1,90 +1,43 @@
 const express = require("express");
-const { default: makeWASocket, useMultiFileAuthState } = require("@whiskeysockets/baileys");
-const QRCode = require("qrcode");
-const crypto = require("crypto");
-const P = require("pino");
-const fs = require("fs");
+const http = require("http");
+const { Server } = require("socket.io");
+const path = require("path");
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
-function generateSessionId() {
-  return "NEXA~" + crypto.randomBytes(4).toString("hex");
-}
+// serve frontend
+app.use(express.static(path.join(__dirname, "public")));
 
-// 🔹 QR SESSION
-app.get("/session", async (req, res) => {
-  const sessionId = generateSessionId();
+// socket connection
+io.on("connection", (socket) => {
+  console.log("User connected");
 
-  const path = `./sessions/${sessionId}`;
-  const { state, saveCreds } = await useMultiFileAuthState(path);
+  socket.on("pair", (phone) => {
+    console.log("Phone:", phone);
 
-  const sock = makeWASocket({
-    auth: state,
-    logger: P({ level: "silent" })
+    // 🔑 fake pairing code
+    const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+    socket.emit("pair", code);
+
+    socket.emit("msg", "Enter code in WhatsApp");
+
+    // ⏳ simulate session after 10 sec
+    setTimeout(() => {
+      const session = "NEXA~" + Math.random().toString(36).substring(2, 12);
+      socket.emit("session", session);
+    }, 10000);
   });
 
-  sock.ev.on("connection.update", async (update) => {
-
-    if (update.qr) {
-      const qr = await QRCode.toDataURL(update.qr);
-
-      return res.json({
-        status: "qr",
-        sessionId,
-        qr
-      });
-    }
-
-    if (update.connection === "open") {
-      console.log("Connected:", sessionId);
-
-      const myNumber = sock.user.id.split(":")[0] + "@s.whatsapp.net";
-
-      await sock.sendMessage(myNumber, {
-        text: `✅ NEXA-MD Connected\n\nSession ID:\n${sessionId}`
-      });
-    }
+  socket.on("disconnect", () => {
+    console.log("User disconnected");
   });
-
-  sock.ev.on("creds.update", saveCreds);
 });
 
+const PORT = process.env.PORT || 3000;
 
-// 🔹 PAIRING CODE
-app.get("/pair", async (req, res) => {
-  const number = req.query.number;
-
-  if (!number) return res.json({ error: "Enter number" });
-
-  const sessionId = generateSessionId();
-
-  const path = `./sessions/${sessionId}`;
-  const { state, saveCreds } = await useMultiFileAuthState(path);
-
-  const sock = makeWASocket({
-    auth: state,
-    logger: P({ level: "silent" })
-  });
-
-  const code = await sock.requestPairingCode(number);
-
-  res.json({
-    status: "pair",
-    sessionId,
-    code
-  });
-
-  sock.ev.on("connection.update", async (update) => {
-    if (update.connection === "open") {
-      const myNumber = sock.user.id.split(":")[0] + "@s.whatsapp.net";
-
-      await sock.sendMessage(myNumber, {
-        text: `✅ NEXA-MD Connected\n\nSession ID:\n${sessionId}`
-      });
-    }
-  });
-
-  sock.ev.on("creds.update", saveCreds);
+server.listen(PORT, () => {
+  console.log("🚀 Server running on port " + PORT);
 });
-
-app.listen(3000, () => console.log("Server running"));
